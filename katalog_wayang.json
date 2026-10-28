@@ -1,0 +1,26 @@
+[
+  {
+    "id": "wayang1",
+    "name": "Ksatria (Wayang 1)",
+    "file": "assets/wayang/Wayang 1.png",
+    "heightRatio": 0.68
+  },
+  {
+    "id": "semar",
+    "name": "Kyai Lurah Semar",
+    "file": "assets/wayang/Semar.png",
+    "heightRatio": 0.52
+  },
+  {
+    "id": "petruk",
+    "name": "Petruk / Punakawan",
+    "file": "assets/wayang/Petruk.png",
+    "heightRatio": 0.58
+  },
+  {
+    "id": "gunungan",
+    "name": "Gunungan (Kayon)",
+    "file": "assets/wayang/Gunungan.png",
+    "heightRatio": 0.76
+  }
+]

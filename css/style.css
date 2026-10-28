@@ -1,0 +1,882 @@
+/* ==========================================================================
+   MAYARUPA — MODERN HERITAGE CONSOLE DESIGN SYSTEM
+   Aesthetics: Deep Teak Wood (Kayu Jati), Javanese Brass Blencong, Warm Mori Linen
+   Crafted with: Precise SVG vector icons, Tactile console docks, Refined typography
+   Zero AI Slop • Pure Authentic Digital Wayang Heritage
+   ========================================================================== */
+
+:root {
+    /* Core Heritage Palette */
+    --teak-deep: #0c0805;
+    --teak-surface: #140d09;
+    --teak-elevated: #1e140e;
+    --teak-border: rgba(212, 163, 64, 0.22);
+    --teak-border-hover: rgba(212, 163, 64, 0.5);
+    
+    /* Gold & Brass Accents (Sepuhan Blencong & Prada Wayang) */
+    --gold-prada: #d4a340;
+    --gold-bright: #f0c562;
+    --gold-glow: rgba(212, 163, 64, 0.16);
+    --gold-muted: #8c6d32;
+
+    /* Soga Wood & Status Colors */
+    --soga-red: #b84332;
+    --soga-red-glow: rgba(184, 67, 50, 0.25);
+    --status-green: #38a169;
+    --status-green-glow: rgba(56, 161, 105, 0.3);
+
+    /* Mori Linen & Typography */
+    --mori-linen: #faf5eb;
+    --text-primary: #ede4d3;
+    --text-muted: #9c907f;
+    --text-dim: #6e6456;
+
+    /* Shadows & Radii */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    --shadow-dock: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--teak-border);
+    --shadow-card: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--teak-border);
+}
+
+/* Base Reset */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--teak-deep);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   STAGE CONTAINER & CANVAS
+   ========================================================================== */
+
+#stageContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+}
+
+#kelirCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+}
+
+#kelirCanvas:active {
+    cursor: grabbing;
+}
+
+/* ==========================================================================
+   FEEDBACK ACTION TOAST (TOP CENTER)
+   ========================================================================== */
+
+#actionBadge {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-18px);
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(18, 12, 8, 0.92);
+    border: 1px solid var(--teak-border);
+    border-radius: var(--radius-full);
+    padding: 8px 20px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 15px var(--gold-glow);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--gold-bright);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 90;
+}
+
+#actionBadge.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--gold-bright);
+    box-shadow: 0 0 8px var(--gold-bright);
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   TOGGLE HUD BUTTON (POJOK KANAN ATAS)
+   ========================================================================== */
+
+.hud-toggle-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    background: rgba(18, 12, 8, 0.6);
+    border: 1px solid var(--teak-border);
+    color: var(--text-muted);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.22s ease;
+}
+
+.hud-toggle-btn:hover {
+    background: rgba(28, 18, 12, 0.9);
+    border-color: var(--gold-prada);
+    color: var(--gold-bright);
+    box-shadow: 0 0 16px var(--gold-glow);
+    transform: scale(1.05);
+}
+
+.hud-toggle-btn:active {
+    transform: scale(0.96);
+}
+
+.hud-toggle-btn .svg-icon {
+    width: 17px;
+    height: 17px;
+}
+
+/* ==========================================================================
+   DALANG HUD (KONSOL DALANG DIGITAL)
+   ========================================================================== */
+
+#dalangHud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 24px 24px 24px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#dalangHud.hidden {
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none !important;
+}
+
+#dalangHud * {
+    pointer-events: auto;
+}
+
+/* Header Atas: Brand & Kamera Dalang */
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.brand-heritage {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(16, 10, 7, 0.85);
+    border: 1px solid var(--teak-border);
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.brand-crest {
+    color: var(--gold-prada);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212, 163, 64, 0.08);
+    border: 1px solid rgba(212, 163, 64, 0.2);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.brand-text h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gold-bright);
+    line-height: 1.1;
+}
+
+.brand-text p {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+}
+
+/* Sensor Kamera Dalang */
+.camera-console {
+    width: 140px;
+    background: rgba(16, 10, 7, 0.88);
+    border: 1px solid var(--teak-border);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    margin-right: 48px; /* Ruang untuk tombol HUD toggle di pojok */
+    transition: border-color 0.25s ease;
+}
+
+.camera-console:hover {
+    border-color: var(--teak-border-hover);
+}
+
+.camera-screen {
+    position: relative;
+    width: 100%;
+    height: 90px;
+    border-radius: 6px;
+    background: #000;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.camera-screen video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    opacity: 0.45;
+}
+
+.camera-screen canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.camera-meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 4px 2px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.sensor-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-dim);
+    flex-shrink: 0;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sensor-dot.active {
+    background-color: var(--status-green);
+    box-shadow: 0 0 8px var(--status-green);
+}
+
+.sensor-dot.error {
+    background-color: var(--soga-red);
+    box-shadow: 0 0 8px var(--soga-red);
+}
+
+/* ==========================================================================
+   FLOATING DOCK TENGAH BAWAH (PRIMARY & SECONDARY)
+   ========================================================================== */
+
+.hud-bottom-deck {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.dalang-dock {
+    background: rgba(18, 12, 8, 0.92);
+    border: 1px solid var(--teak-border);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-dock);
+    display: flex;
+    align-items: center;
+    transition: border-color 0.22s ease;
+}
+
+.dalang-dock:hover {
+    border-color: var(--teak-border-hover);
+}
+
+/* Primary Dock (Pentas Utama) */
+.primary-dock {
+    padding: 8px 14px;
+    gap: 12px;
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Secondary Dock (Utilitas) */
+.secondary-dock {
+    padding: 6px 14px;
+    gap: 10px;
+    border-radius: var(--radius-full);
+    background: rgba(14, 9, 6, 0.84);
+}
+
+/* Dock Separator */
+.dock-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--teak-border);
+    flex-shrink: 0;
+}
+
+.dock-separator.mini {
+    height: 16px;
+    opacity: 0.6;
+}
+
+/* Puppet Control Groups (Kiri & Kanan) */
+.puppet-control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.25s ease;
+}
+
+.group-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold-prada);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* Core Actions Group */
+.core-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ==========================================================================
+   BUTTONS & SELECTS (HERITAGE CONSOLE STYLE)
+   ========================================================================== */
+
+.heritage-btn {
+    background: rgba(30, 20, 14, 0.8);
+    border: 1px solid var(--teak-border);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 13px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.heritage-btn:hover {
+    background: rgba(44, 28, 19, 0.95);
+    border-color: var(--gold-prada);
+    color: var(--gold-bright);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.heritage-btn:active {
+    transform: translateY(1px);
+}
+
+.heritage-btn.icon-only {
+    padding: 7px;
+}
+
+/* Tombol Kamera Highlight */
+.heritage-btn.btn-highlight {
+    background: linear-gradient(135deg, #a67c2e, #d4a340);
+    color: #0c0805;
+    font-weight: 700;
+    border: 1px solid var(--gold-bright);
+    box-shadow: 0 2px 10px rgba(212, 163, 64, 0.25);
+}
+
+.heritage-btn.btn-highlight:hover {
+    background: linear-gradient(135deg, #bf8f37, #f0c562);
+    color: #000;
+    box-shadow: 0 4px 16px rgba(212, 163, 64, 0.45);
+}
+
+.heritage-btn.btn-highlight.active {
+    background: linear-gradient(135deg, #87291a, #b84332);
+    color: #fff;
+    border-color: #ff7b67;
+    box-shadow: 0 2px 12px var(--soga-red-glow);
+}
+
+/* Tombol State Active (Toggle) */
+.heritage-btn.active {
+    background: rgba(212, 163, 64, 0.16);
+    border-color: var(--gold-bright);
+    color: var(--gold-bright);
+    box-shadow: inset 0 0 8px rgba(212, 163, 64, 0.2);
+}
+
+/* Utility Button (Secondary Dock) */
+.utility-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 9px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.utility-btn:hover {
+    color: var(--gold-bright);
+    background: rgba(212, 163, 64, 0.08);
+}
+
+.utility-btn:active {
+    transform: translateY(1px);
+}
+
+.utility-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Custom Select Wrapper with SVG Chevron */
+.custom-select-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.custom-select-wrapper.full-width {
+    width: 100%;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 9px;
+    width: 13px;
+    height: 13px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.18s ease;
+}
+
+.custom-select-wrapper:hover .select-chevron {
+    color: var(--gold-prada);
+}
+
+.heritage-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(14, 9, 6, 0.95);
+    border: 1px solid var(--teak-border);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 28px 7px 11px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.heritage-select:hover, .heritage-select:focus {
+    border-color: var(--gold-prada);
+    color: var(--gold-bright);
+}
+
+.heritage-select.compact {
+    padding: 5px 26px 5px 9px;
+    font-size: 11px;
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+}
+
+.heritage-select.compact:hover, .heritage-select.compact:focus {
+    background: rgba(14, 9, 6, 0.85);
+    border-color: var(--teak-border);
+    color: var(--gold-bright);
+}
+
+.custom-select-wrapper.full-width .heritage-select {
+    width: 100%;
+}
+
+/* SVG Icon Helper */
+.svg-icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.svg-icon.icon-muted {
+    color: var(--text-muted);
+}
+
+.svg-icon.gold {
+    color: var(--gold-bright);
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+/* ==========================================================================
+   DRAWER PENGATURAN TOKOH & CEMPURIT (SLIDE-OVER DARI KANAN)
+   ========================================================================== */
+
+.heritage-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heritage-modal-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.heritage-drawer-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--teak-surface);
+    border-left: 1px solid var(--teak-border);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heritage-modal-backdrop.active .heritage-drawer-card {
+    transform: translateX(0);
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--teak-border);
+    margin-bottom: 20px;
+}
+
+.drawer-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.drawer-title-group h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--gold-bright);
+}
+
+.drawer-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    transition: all 0.18s ease;
+}
+
+.drawer-close-btn:hover {
+    color: var(--gold-bright);
+    background: rgba(212, 163, 64, 0.1);
+}
+
+.drawer-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.drawer-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold-prada);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* Fader Console Box */
+.fader-panel {
+    background: rgba(14, 9, 6, 0.85);
+    border: 1px solid var(--teak-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.fader-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fader-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.fader-label {
+    font-weight: 500;
+}
+
+.fader-badge {
+    color: var(--gold-bright);
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 13px;
+    background: rgba(212, 163, 64, 0.1);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid rgba(212, 163, 64, 0.2);
+}
+
+.heritage-fader {
+    width: 100%;
+    accent-color: var(--gold-prada);
+    cursor: pointer;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    outline: none;
+}
+
+.fader-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--text-dim);
+    font-weight: 500;
+    padding: 0 2px;
+}
+
+.drawer-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(212, 163, 64, 0.06);
+    border: 1px solid rgba(212, 163, 64, 0.18);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.notice-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--gold-prada);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ==========================================================================
+   CARD MODAL (CENTER DIALOG & CUSTOM ALERT)
+   ========================================================================== */
+
+.heritage-card-modal {
+    position: relative;
+    background: var(--teak-surface);
+    border: 1px solid var(--gold-prada);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    width: 90%;
+    max-width: 440px;
+    padding: 28px 24px;
+    margin: auto;
+    text-align: center;
+    color: var(--text-primary);
+    transform: scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heritage-modal-backdrop.active .heritage-card-modal {
+    transform: scale(1);
+}
+
+.modal-crest-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(212, 163, 64, 0.1);
+    border: 1px solid rgba(212, 163, 64, 0.25);
+    color: var(--gold-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px auto;
+}
+
+.modal-crest-icon.warning {
+    background: rgba(184, 67, 50, 0.12);
+    border-color: rgba(184, 67, 50, 0.35);
+    color: #ff7b67;
+}
+
+.modal-crest-icon.success {
+    background: rgba(56, 161, 105, 0.12);
+    border-color: rgba(56, 161, 105, 0.35);
+    color: #48bb78;
+}
+
+.modal-headline {
+    font-family: 'Cinzel', serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--gold-bright);
+    margin-bottom: 12px;
+}
+
+.modal-description {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.modal-tip-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(212, 163, 64, 0.08);
+    border: 1px solid rgba(212, 163, 64, 0.25);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--gold-bright);
+    text-align: left;
+}
+
+.tip-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--gold-prada);
+    flex-shrink: 0;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* ==========================================================================
+   RESPONSIVE LAYOUT (TABLET & COMPACT SCREENS)
+   ========================================================================== */
+
+@media (max-width: 860px) {
+    .primary-dock {
+        gap: 8px;
+    }
+    .core-actions-group {
+        gap: 6px;
+    }
+    .heritage-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    .heritage-btn .btn-text {
+        display: none;
+    }
+    .brand-text p {
+        display: none;
+    }
+}

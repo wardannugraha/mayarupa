@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mayarupa - Layar Bersih Proyektor / OBS</title>
+    <meta name="description" content="Mayarupa - Virtual Hand-Tracked Puppetry. Layar bersih bebas menu untuk InFocus, proyektor panggung, dan OBS streaming. by wardannugraha.">
+    <meta name="author" content="wardannugraha">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            cursor: pointer;
+        }
+        #kelirCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #fsPrompt {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 13, 8, 0.85);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: #ffd700;
+            font-family: sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 1s ease;
+            z-index: 10;
+        }
+        #fsPrompt.hidden {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="kelirCanvas"></canvas>
+    <div id="fsPrompt">Klik 2x atau Tekan [ F ] untuk Layar Penuh</div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('kelirCanvas');
+            const ctx = canvas.getContext('2d');
+            const fsPrompt = document.getElementById('fsPrompt');
+
+            setTimeout(() => {
+                if (fsPrompt) fsPrompt.classList.add('hidden');
+            }, 4000);
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                    if (fsPrompt) fsPrompt.classList.add('hidden');
+                } else {
+                    document.exitFullscreen().catch(err => console.warn(err));
+                }
+            }
+
+            window.addEventListener('dblclick', toggleFullscreen);
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'f' || e.key === 'F' || e.key === 'F11' || e.key === 'Enter') {
+                    e.preventDefault();
+                    toggleFullscreen();
+                }
+            });
+
+            const channel = new BroadcastChannel('wayang_digital_channel');
+            const imageCache = {};
+
+            function getImage(src) {
+                if (!src) return null;
+                if (imageCache[src]) return imageCache[src];
+                const img = new Image();
+                img.src = src;
+                imageCache[src] = img;
+                return img;
+            }
+
+            let state = {
+                latarId: 'megamendung_batik',
+                blencongFlicker: 1.0,
+                cloudOffset: 0,
+                puppetLeft: null,
+                puppetRight: null
+            };
+
+            const megaMendungImg = new Image();
+            megaMendungImg.onerror = () => {
+                if (megaMendungImg.src.includes('assets/background/')) {
+                    megaMendungImg.src = 'ElementBg/pngtree-batik-mega-cloudy-blue-illustration-vector-png-image_7481784.png';
+                }
+            };
+            megaMendungImg.src = 'assets/background/mega_mendung.png';
+            setTimeout(() => {
+                if (!megaMendungImg.complete || megaMendungImg.naturalWidth === 0) {
+                    megaMendungImg.src = 'ElementBg/pngtree-batik-mega-cloudy-blue-illustration-vector-png-image_7481784.png';
+                }
+            }, 500);
+            let megaMendungSilhouetteCanvas = null;
+
+            function getSilhouettedCloudCanvas() {
+                if (megaMendungSilhouetteCanvas) return megaMendungSilhouetteCanvas;
+                if (!megaMendungImg || !megaMendungImg.complete || megaMendungImg.naturalWidth === 0) return null;
+                const off = document.createElement('canvas');
+                off.width = megaMendungImg.naturalWidth;
+                off.height = megaMendungImg.naturalHeight;
+                const octx = off.getContext('2d');
+                octx.drawImage(megaMendungImg, 0, 0);
+                octx.globalCompositeOperation = 'source-in';
+                octx.fillStyle = '#160904';
+                octx.fillRect(0, 0, off.width, off.height);
+                megaMendungSilhouetteCanvas = off;
+                return off;
+            }
+
+            function renderMegaMendungBatik(ctx, width, height, baseY, offset) {
+                const cloudCanvas = getSilhouettedCloudCanvas();
+                const img = cloudCanvas || megaMendungImg;
+
+                if (!img || !img.width || img.width === 0) {
+                    ctx.fillStyle = 'rgba(14, 7, 3, 0.92)';
+                    renderRollingClouds(ctx, width, height, baseY, 80, offset * 0.5, 30);
+                    return;
+                }
+
+                const imgRatio = (img.height || 1) / (img.width || 1);
+
+                // Layer 1: Latar Belakang (Nuansa Halus, Gerak Tenang ke Kanan)
+                const w1 = Math.max(240, width * 0.28);
+                const h1 = w1 * imgRatio;
+                const step1 = w1 * 0.58;
+                const pos1 = offset * 10;
+                const shift1 = ((pos1 % step1) + step1) % step1;
+
+                ctx.globalAlpha = 0.42;
+                for (let x = -step1 * 2; x <= width + step1 * 2; x += step1) {
+                    ctx.drawImage(img, x + shift1, baseY - h1 * 0.65, w1, h1);
+                }
+
+                // Layer 2: Latar Tengah (Bertumpuk di Sela, Gerak Tenang ke Kiri)
+                const w2 = Math.max(280, width * 0.34);
+                const h2 = w2 * imgRatio;
+                const step2 = w2 * 0.62;
+                const pos2 = -offset * 14;
+                const shift2 = ((pos2 % step2) + step2) % step2;
+
+                ctx.globalAlpha = 0.72;
+                for (let x = -step2 * 2; x <= width + step2 * 2; x += step2) {
+                    ctx.drawImage(img, x + shift2, baseY - h2 * 0.42, w2, h2);
+                }
+
+                // Layer 3: Latar Depan (Siluet Pekat, Gerak Mantap ke Kanan)
+                const w3 = Math.max(330, width * 0.40);
+                const h3 = w3 * imgRatio;
+                const step3 = w3 * 0.68;
+                const pos3 = offset * 18;
+                const shift3 = ((pos3 % step3) + step3) % step3;
+
+                ctx.globalAlpha = 0.96;
+                for (let x = -step3 * 2; x <= width + step3 * 2; x += step3) {
+                    ctx.drawImage(img, x + shift3, baseY - h3 * 0.18, w3, h3);
+                }
+
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#160904';
+                ctx.fillRect(0, baseY + h3 * 0.68, width, height - (baseY + h3 * 0.68));
+            }
+
+            channel.onmessage = (event) => {
+                if (event.data && event.data.type === 'SYNC_FRAME') {
+                    state = event.data.payload;
+                }
+            };
+
+            function renderRollingClouds(ctx, width, height, y, waveWidth, offset, amp) {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+                ctx.lineTo(0, y);
+                for (let x = -waveWidth * 2; x <= width + waveWidth * 2; x += waveWidth) {
+                    const drawX = x + (offset % waveWidth);
+                    ctx.bezierCurveTo(
+                        drawX + waveWidth * 0.25, y - amp,
+                        drawX + waveWidth * 0.75, y - amp,
+                        drawX + waveWidth, y
+                    );
+                }
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function renderTirtaWaves(ctx, width, height, y, waveWidth, offset, amp) {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+                ctx.lineTo(0, y);
+                for (let x = -waveWidth * 2; x <= width + waveWidth * 2; x += waveWidth) {
+                    const drawX = x + (offset % waveWidth);
+                    ctx.quadraticCurveTo(
+                        drawX + waveWidth * 0.4, y - amp * 1.3,
+                        drawX + waveWidth * 0.7, y - amp * 0.2
+                    );
+                    ctx.quadraticCurveTo(
+                        drawX + waveWidth * 0.85, y - amp * 0.8,
+                        drawX + waveWidth, y
+                    );
+                }
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function renderTemplePeaks(ctx, width, height, y, stepWidth, shiftX) {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+                ctx.lineTo(0, y);
+                for (let x = -stepWidth; x <= width + stepWidth; x += stepWidth) {
+                    const px = x + shiftX;
+                    ctx.lineTo(px + stepWidth * 0.2, y - 20);
+                    ctx.lineTo(px + stepWidth * 0.35, y - 50);
+                    ctx.lineTo(px + stepWidth * 0.5, y - 85);
+                    ctx.lineTo(px + stepWidth * 0.65, y - 50);
+                    ctx.lineTo(px + stepWidth * 0.8, y - 20);
+                    ctx.lineTo(px + stepWidth, y);
+                }
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function renderForestSilhouettes(ctx, width, height, y, stepWidth, shiftX) {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+                ctx.lineTo(0, y);
+                for (let x = -stepWidth; x <= width + stepWidth; x += stepWidth) {
+                    const px = x + shiftX;
+                    ctx.bezierCurveTo(
+                        px + stepWidth * 0.2, y - 35,
+                        px + stepWidth * 0.35, y - 60,
+                        px + stepWidth * 0.5, y - 45
+                    );
+                    ctx.bezierCurveTo(
+                        px + stepWidth * 0.65, y - 70,
+                        px + stepWidth * 0.85, y - 30,
+                        px + stepWidth, y
+                    );
+                }
+                ctx.lineTo(width, height);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function draw() {
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // 1. Dasar Kain Kelir Candi Keemasan Penuh
+                const grad = ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, '#4a2418');
+                grad.addColorStop(0.55, '#a66e35');
+                grad.addColorStop(0.85, '#5c3314');
+                grad.addColorStop(1.0, '#1c0d06');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                // 2. Blencong Glow Melingkar
+                const centerX = w * 0.5;
+                const centerY = h * 0.32;
+                const radius = Math.max(w, h) * 0.78 * (state.blencongFlicker || 1.0);
+
+                const lightGrad = ctx.createRadialGradient(centerX, centerY, 30, centerX, centerY, radius);
+                lightGrad.addColorStop(0, 'rgba(255, 220, 140, 0.95)');
+                lightGrad.addColorStop(0.3, 'rgba(255, 195, 100, 0.55)');
+                lightGrad.addColorStop(0.65, 'rgba(180, 95, 30, 0.25)');
+                lightGrad.addColorStop(1.0, 'rgba(22, 10, 4, 0.85)');
+
+                ctx.fillStyle = lightGrad;
+                ctx.fillRect(0, 0, w, h);
+
+                // 3. Tekstur Serat Kain
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.015)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < w; x += 16) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, h);
+                    ctx.stroke();
+                }
+
+                // 4. Render Siluet Motif Terpilih di Bagian Bawah
+                const motifId = state.latarId || 'megamendung_batik';
+                if (motifId !== 'kelir_polos') {
+                    const baseY = h * 0.82;
+                    const offset = state.cloudOffset || 0;
+                    ctx.save();
+
+                    if (motifId === 'megamendung_batik') {
+                        renderMegaMendungBatik(ctx, w, h, baseY, offset);
+                    } else if (motifId === 'awan_kumulus' || motifId === 'awan_megamendung') {
+                        ctx.fillStyle = 'rgba(38, 20, 10, 0.32)';
+                        renderRollingClouds(ctx, w, h, baseY - 35, 90, offset * 0.35, 24);
+                        ctx.fillStyle = 'rgba(28, 14, 7, 0.6)';
+                        renderRollingClouds(ctx, w, h, baseY - 15, 75, -offset * 0.5, 30);
+                        ctx.fillStyle = 'rgba(14, 7, 3, 0.92)';
+                        renderRollingClouds(ctx, w, h, baseY + 6, 60, offset * 0.65, 36);
+                    } else if (motifId === 'ombak_tirta') {
+                        ctx.fillStyle = 'rgba(35, 18, 9, 0.35)';
+                        renderTirtaWaves(ctx, w, h, baseY - 30, 80, offset * 0.8, 22);
+                        ctx.fillStyle = 'rgba(25, 12, 6, 0.65)';
+                        renderTirtaWaves(ctx, w, h, baseY - 10, 65, -offset * 1.0, 28);
+                        ctx.fillStyle = 'rgba(12, 6, 2, 0.94)';
+                        renderTirtaWaves(ctx, w, h, baseY + 8, 50, offset * 1.2, 34);
+                    } else if (motifId === 'candi_gunung') {
+                        ctx.fillStyle = 'rgba(40, 22, 11, 0.45)';
+                        renderTemplePeaks(ctx, w, h, baseY - 60, 220, 0);
+                        ctx.fillStyle = 'rgba(15, 7, 3, 0.95)';
+                        renderTemplePeaks(ctx, w, h, baseY - 15, 160, 80);
+                    } else if (motifId === 'hutan_alas') {
+                        ctx.fillStyle = 'rgba(38, 20, 10, 0.4)';
+                        renderForestSilhouettes(ctx, w, h, baseY - 40, 130, 0);
+                        ctx.fillStyle = 'rgba(14, 7, 3, 0.92)';
+                        renderForestSilhouettes(ctx, w, h, baseY - 10, 100, 50);
+                    }
+
+                    const mistGrad = ctx.createLinearGradient(0, baseY - 50, 0, h);
+                    mistGrad.addColorStop(0, 'rgba(255, 225, 160, 0)');
+                    mistGrad.addColorStop(0.5, 'rgba(240, 185, 110, 0.14)');
+                    mistGrad.addColorStop(1.0, 'rgba(12, 6, 2, 0.65)');
+                    ctx.fillStyle = mistGrad;
+                    ctx.fillRect(0, baseY - 50, w, h - baseY + 50);
+                    ctx.restore();
+                }
+
+                // 5. Render Puppets
+                [state.puppetLeft, state.puppetRight].forEach((p) => {
+                    if (!p || !p.visible || !p.src) return;
+                    const img = getImage(p.src);
+                    if (!img || !img.complete || img.naturalWidth === 0) return;
+
+                    const targetHeight = h * (p.heightRatio || 0.65) * (p.sizeMultiplier || 1.0);
+                    const aspect = img.naturalWidth / img.naturalHeight;
+                    const targetWidth = targetHeight * aspect;
+
+                    const posX = (p.relX || 0.5) * w;
+                    const posY = (p.relY || 0.8) * h + (p.offsetY || 0);
+
+                    ctx.save();
+                    ctx.translate(posX, posY);
+                    ctx.rotate(p.rotation || 0);
+                    ctx.scale(p.facing || 1, 1);
+
+                    const drawX = -targetWidth / 2;
+                    const drawY = -targetHeight;
+
+                    if (p.isSilhouette) {
+                        ctx.save();
+                        ctx.shadowColor = 'rgba(10, 6, 2, 0.92)';
+                        ctx.shadowBlur = 6;
+                        ctx.shadowOffsetY = 2;
+                        ctx.filter = 'brightness(0%) contrast(160%)';
+                        ctx.drawImage(img, drawX, drawY, targetWidth, targetHeight);
+                        ctx.restore();
+                    } else {
+                        ctx.save();
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowOffsetY = 4;
+                        ctx.drawImage(img, drawX, drawY, targetWidth, targetHeight);
+                        ctx.restore();
+                    }
+                    ctx.restore();
+                });
+
+                requestAnimationFrame(draw);
+            }
+
+            requestAnimationFrame(draw);
+        })();
+    </script>
+</body>
+</html>

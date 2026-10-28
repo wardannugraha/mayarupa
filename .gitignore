@@ -1,0 +1,17 @@
+# Jurnal, Naskah Ilmiah, & Dokumen Riset
+jurnal/
+DRAFT_JURNAL_BLUEPRINT.md
+
+# AI Agents & Skills Configuration
+.agents/
+skills-lock.json
+
+# Operating System & Environment
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
+
+# Editor & IDE
+.vscode/
+.idea/
